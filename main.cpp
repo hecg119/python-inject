@@ -124,10 +124,10 @@ int main(int argc, char ** argv) {
     }
 
     int state = pfnEnsure();
-    pfnRun(source.c_str());
+    int error = pfnRun(source.c_str());
     pfnRelease(state);
 
-    do_syscall(SYS_exit, 0);
+    do_syscall(SYS_exit, error);
 
     return 0;
 }
