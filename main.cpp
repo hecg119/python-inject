@@ -66,7 +66,23 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    unsigned baseAddress = reader.get_type() == ET_EXEC ? 0 : processMap.start;
+    unsigned baseAddress = 0;
+
+    if (reader.get_type() != ET_EXEC) {
+        auto sit = std::find_if(
+                reader.segments.begin(),
+                reader.segments.end(),
+                [](const auto& s) {
+                    return s->get_type() == PT_LOAD;
+                });
+
+        if (sit == reader.segments.end()) {
+            LOG_ERROR("can't find load segment");
+            return -1;
+        }
+
+        baseAddress = processMap.start - (*sit)->get_virtual_address();
+    }
 
     PFN_ENSURE pfnEnsure = nullptr;
     PFN_RUN pfnRun = nullptr;
@@ -83,7 +99,7 @@ int main(int argc, char ** argv) {
         ELFIO::Elf_Half section = 0;
         unsigned char other = 0;
 
-        if (!symbols.get_symbol(i, name, value, size, bind, type, section,other)) {
+        if (!symbols.get_symbol(i, name, value, size, bind, type, section, other)) {
             LOG_ERROR("get symbol %lu failed", i);
             return -1;
         }
