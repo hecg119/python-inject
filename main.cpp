@@ -66,7 +66,7 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    unsigned baseAddress = 0;
+    unsigned long baseAddress = 0;
 
     if (reader.get_type() != ET_EXEC) {
         auto sit = std::find_if(
