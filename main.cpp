@@ -2,9 +2,6 @@
 #include <common/cmdline.h>
 #include <common/utils/process.h>
 #include <elfio/elfio.hpp>
-#include <syscall/do_syscall.h>
-#include <syscall.h>
-#include <asm/prctl.h>
 
 typedef int (*PFN_RUN)(const char *command);
 typedef int (*PFN_ENSURE)();
@@ -12,28 +9,19 @@ typedef void (*PFN_RELEASE)(int);
 
 constexpr auto PYTHON = "bin/python";
 constexpr auto PYTHON_LIBRARY = "libpython";
+constexpr auto PYTHON_CALLER = "python_caller";
 
 int main(int argc, char ** argv) {
     cmdline::parser parse;
 
-    parse.add<std::string>("source", 's', "python source code", true, "");
+    parse.add<int>("pid", 'p', "pid", true, 0);
+    parse.add<std::string>("source", 's', "python source file", true, "");
+    parse.add<std::string>("pangolin", '\0', "pangolin path", true, "");
     parse.add("file", '\0', "pass source by file");
 
     parse.parse_check(argc, argv);
 
-    auto pid = getpid();
-    auto source = parse.get<std::string>("source");
-
-    if (parse.exist("file")) {
-        std::ifstream ifs(source);
-
-        if (!ifs.is_open()) {
-            LOG_ERROR("open source file failed: %s", source.c_str());
-            return -1;
-        }
-
-        source = std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>());
-    }
+    int pid = parse.get<int>("pid");
 
     CProcessMap processMap;
 
@@ -119,31 +107,30 @@ int main(int argc, char ** argv) {
 
     LOG_INFO("ensure func: %p run func: %p release func: %p", pfnEnsure, pfnRun, pfnRelease);
 
-    unsigned long fs = 0;
-    char *FS = getenv("FS");
+    std::string source = parse.get<std::string>("source");
+    std::string pangolin = parse.get<std::string>("pangolin");
+    std::string caller = CPath::join(CPath::getAPPDir(), PYTHON_CALLER);
 
-    if (!FS) {
-        LOG_ERROR("get fs environment variable failed");
+    char callerCommand[1024] = {};
+
+    snprintf(
+            callerCommand, sizeof(callerCommand),
+            "%s %s %d %p %p %p",
+            caller.c_str(), source.c_str(), parse.exist("file"),
+            pfnEnsure, pfnRun, pfnRelease
+            );
+
+    int err = execl(
+            pangolin.c_str(), pangolin.c_str(),
+            "-c", callerCommand,
+            "-p", std::to_string(pid).c_str(),
+            nullptr
+            );
+
+    if (err < 0) {
+        LOG_ERROR("exec pangolin failed: %s", strerror(errno));
         return -1;
     }
-
-    if (!CStringHelper::toNumber(FS, fs, 16)) {
-        LOG_ERROR("parse fs environment variable failed");
-        return -1;
-    }
-
-    LOG_INFO("set fs: 0x%lx", fs);
-
-    if (do_syscall(SYS_arch_prctl, ARCH_SET_FS, fs) != 0) {
-        LOG_ERROR("set fs failed");
-        return -1;
-    }
-
-    int state = pfnEnsure();
-    int error = pfnRun(source.c_str());
-    pfnRelease(state);
-
-    do_syscall(SYS_exit, error);
 
     return 0;
 }
