@@ -35,10 +35,12 @@ int main(int argc, char ** argv) {
 
     LOG_INFO("find target: 0x%lx -> %s", processMap.start, processMap.file.c_str());
 
+    std::string path = CPath::join("/proc", std::to_string(pid), "root", processMap.file);
+
     ELFIO::elfio reader;
 
-    if (!reader.load(processMap.file)) {
-        LOG_ERROR("open elf failed: %s", processMap.file.c_str());
+    if (!reader.load(path)) {
+        LOG_ERROR("open elf failed: %s", path.c_str());
         return -1;
     }
 
