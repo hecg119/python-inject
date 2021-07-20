@@ -14,6 +14,8 @@ constexpr auto UWSGI = "uwsgi";
 constexpr auto PYTHON_CALLER = "python_caller";
 
 int main(int argc, char ** argv) {
+    INIT_CONSOLE_LOG(INFO);
+
     cmdline::parser parse;
 
     parse.add<int>("pid", 'p', "pid", true, 0);

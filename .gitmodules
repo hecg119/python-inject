@@ -4,6 +4,6 @@
 [submodule "include/common"]
 	path = include/common
 	url = https://github.com/Hackerl/cpp-common
-[submodule "caller/crt"]
-	path = caller/crt
-	url = https://github.com/Hackerl/crt
+[submodule "caller/c-runtime"]
+	path = caller/c-runtime
+	url = https://github.com/Hackerl/c-runtime

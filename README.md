@@ -75,9 +75,13 @@ Resolve ELF symbol table, find ```PyGILState_Ensure```, ```PyRun_SimpleString```
    ```sh
    git submodule update --init --recursive
    ```
-3. Build
+3. Build injector
    ```sh
    mkdir -p build && cd build && cmake .. && make
+   ```
+4. Build shellcode
+   ```sh
+   make -C caller && mv caller/python_caller bin
    ```
 
 
