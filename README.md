@@ -90,7 +90,7 @@ Resolve ELF symbol table, find ```PyGILState_Ensure```, ```PyRun_SimpleString```
 ## Usage
 
 Inject by using [pangolin](https://github.com/Hackerl/pangolin):
-```
+```sh
 ./python_inject --pangolin=$(pwd)/pangolin -s '"print(1)"' -p $(pidof python)
 ```
 
